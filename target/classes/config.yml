@@ -1,0 +1,10 @@
+# Quantidade mínima de votos (%) para parar a chuva
+percent_required: 50
+
+messages:
+  vote_start: "&9Esta chovendo!\n&9Deseja votar para que a chuva pare?\nDigite &a/sim &9ou &c/nao"
+  vote_not_active: "&cNao ha votacao ativa. Aguarde a proxima chuva."
+  already_voted: "&cVoce ja votou nesta sessao de chuva."
+  vote_yes_received: "&aSeu voto para parar a chuva foi registrado!"
+  vote_no_received: "&aSeu voto para continuar a chuva foi registrado!"
+  stopping_rain: "&9Parando de chover..."
