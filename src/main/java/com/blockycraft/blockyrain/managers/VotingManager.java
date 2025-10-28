@@ -8,15 +8,16 @@ import org.bukkit.entity.Player;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.List;
 
 public class VotingManager {
 
     private boolean votingActive = false;
     private Set<String> votedPlayers = new HashSet<>();
     private int yesVotes = 0;
-
     private final double PERCENT_REQUIRED;
     private final Properties props;
+    private final int CHAT_WRAP = 50;
 
     public VotingManager(com.blockycraft.blockyrain.BlockyRain plugin) {
         this.props = plugin.getPluginProperties();
@@ -31,9 +32,43 @@ public class VotingManager {
         }
     }
 
+    // Word wrap com cor para todos os broadcasts
+    private List<String> wrapTextWithColor(String text, int maxLength, String baseColor) {
+        List<String> lines = new java.util.ArrayList<String>();
+        String[] words = text.split(" ");
+        StringBuilder line = new StringBuilder();
+        String color = baseColor;
+        for (String word : words) {
+            if (line.length() + word.length() + 1 > maxLength) {
+                lines.add(color + line.toString());
+                color = getLastColor(line.toString().isEmpty() ? baseColor : line.toString());
+                line = new StringBuilder();
+            }
+            if (line.length() > 0) line.append(" ");
+            line.append(word);
+        }
+        if (line.length() > 0) lines.add(color + line.toString());
+        return lines;
+    }
+    private String getLastColor(String text) {
+        String color = "";
+        for (int i = text.length() - 1; i >= 0; i--) {
+            if (text.charAt(i) == '§' && i + 1 < text.length()) {
+                color = text.substring(i, i+2);
+                break;
+            }
+        }
+        return color;
+    }
+
+    // Mensagens multi-linha com word wrap e cor do chat
     private void broadcastMultiLine(String msg) {
-        for (String linha : msg.split("\n")) {
-            Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', linha));
+        String[] original = msg.split("\\n");
+        for (String linha : original) {
+            String baseColor = getLastColor(linha.length() > 0 ? linha.substring(0,2) : "§e");
+            for (String wrap : wrapTextWithColor(ChatColor.translateAlternateColorCodes('&', linha), CHAT_WRAP, baseColor.isEmpty() ? "§e" : baseColor)) {
+                Bukkit.broadcastMessage(wrap);
+            }
         }
     }
 
@@ -65,25 +100,26 @@ public class VotingManager {
             return;
         }
         Player player = (Player) sender;
-
         if (!votingActive) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_not_active")));
+            for (String linha : wrapTextWithColor(ChatColor.translateAlternateColorCodes('&', getCfg("vote_not_active")), CHAT_WRAP, "§c"))
+                player.sendMessage(linha);
             return;
         }
-
         String playerName = player.getName().toLowerCase();
         if (votedPlayers.contains(playerName)) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("already_voted")));
+            for (String linha : wrapTextWithColor(ChatColor.translateAlternateColorCodes('&', getCfg("already_voted")), CHAT_WRAP, "§e"))
+                player.sendMessage(linha);
             return;
         }
         votedPlayers.add(playerName);
-
         if (yes) {
             yesVotes++;
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_yes_received")));
+            for (String linha : wrapTextWithColor(ChatColor.translateAlternateColorCodes('&', getCfg("vote_yes_received")), CHAT_WRAP, "§a"))
+                player.sendMessage(linha);
             checkVotes();
         } else {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_no_received")));
+            for (String linha : wrapTextWithColor(ChatColor.translateAlternateColorCodes('&', getCfg("vote_no_received")), CHAT_WRAP, "§c"))
+                player.sendMessage(linha);
         }
     }
 
@@ -95,7 +131,6 @@ public class VotingManager {
             return;
         }
         int votesNeeded = (int) Math.ceil(PERCENT_REQUIRED * onlinePlayers);
-
         if (yesVotes >= votesNeeded) {
             stopRain();
         }

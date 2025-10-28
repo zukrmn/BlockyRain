@@ -16,16 +16,14 @@ public class BlockyRain extends JavaPlugin {
     @Override
     public void onEnable() {
         loadConfigProperties();
-
         votingManager = new VotingManager(this);
-
-        getServer().getPluginManager().registerEvents(new com.blockycraft.blockyrain.listeners.WeatherListener(votingManager), this);
-
+        getServer().getPluginManager().registerEvents(
+            new com.blockycraft.blockyrain.listeners.WeatherListener(votingManager), this
+        );
         getCommand("sim").setExecutor((sender, command, label, args) -> {
             votingManager.handleVote(sender, true);
             return true;
         });
-
         getCommand("nao").setExecutor((sender, command, label, args) -> {
             votingManager.handleVote(sender, false);
             return true;
@@ -44,7 +42,6 @@ public class BlockyRain extends JavaPlugin {
                 getDataFolder().mkdirs();
             }
             configProperties = new Properties();
-
             if (!configFile.exists()) {
                 configFile.createNewFile();
                 // Configuração padrão
