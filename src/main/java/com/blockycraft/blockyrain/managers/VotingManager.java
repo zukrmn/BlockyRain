@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 public class VotingManager {
@@ -14,24 +15,38 @@ public class VotingManager {
     private Set<String> votedPlayers = new HashSet<>();
     private int yesVotes = 0;
 
-    // Mensagens customizáveis
-    private final String MSG_VOTE_START = ChatColor.AQUA + "Está chovendo!\n" + ChatColor.AQUA + "Deseja votar para que a chuva pare?\nDigite " + ChatColor.GREEN + "/sim " + ChatColor.AQUA + "ou " + ChatColor.RED + "/nao";
-    private final String MSG_VOTE_NOT_ACTIVE = ChatColor.RED + "Não há votação ativa. Aguarde a próxima chuva.";
-    private final String MSG_ALREADY_VOTED = ChatColor.YELLOW + "Você já votou nesta sessão de chuva.";
-    private final String MSG_VOTE_YES = ChatColor.GREEN + "Seu voto para parar a chuva foi registrado!";
-    private final String MSG_VOTE_NO = ChatColor.RED + "Seu voto para continuar a chuva foi registrado!";
-    private final String MSG_STOPPING_RAIN = ChatColor.AQUA + "Parando de chover...";
+    private final double PERCENT_REQUIRED;
+    private final Properties props;
 
-    // Porcentagem fixa (pode adaptar posteriormente para configuração manual)
-    private final double PERCENT_REQUIRED = 0.5; // 50%
+    public VotingManager(com.blockycraft.blockyrain.BlockyRain plugin) {
+        this.props = plugin.getPluginProperties();
+        this.PERCENT_REQUIRED = getPercentRequiredFromConfig();
+    }
 
-    public VotingManager() {}
+    private double getPercentRequiredFromConfig() {
+        try {
+            return Integer.parseInt(props.getProperty("percent_required", "50")) / 100.0;
+        } catch (Exception e) {
+            return 0.5;
+        }
+    }
+
+    private void broadcastMultiLine(String msg) {
+        for (String linha : msg.split("\n")) {
+            Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', linha));
+        }
+    }
+
+    private String getCfg(String key) {
+        String value = props.getProperty(key);
+        return value != null ? value : key;
+    }
 
     public void startVoting() {
         votingActive = true;
         votedPlayers.clear();
         yesVotes = 0;
-        Bukkit.broadcastMessage(MSG_VOTE_START);
+        broadcastMultiLine(getCfg("vote_start"));
     }
 
     public void stopVoting() {
@@ -52,22 +67,23 @@ public class VotingManager {
         Player player = (Player) sender;
 
         if (!votingActive) {
-            player.sendMessage(MSG_VOTE_NOT_ACTIVE);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_not_active")));
             return;
         }
+
         String playerName = player.getName().toLowerCase();
         if (votedPlayers.contains(playerName)) {
-            player.sendMessage(MSG_ALREADY_VOTED);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("already_voted")));
             return;
         }
         votedPlayers.add(playerName);
 
         if (yes) {
             yesVotes++;
-            player.sendMessage(MSG_VOTE_YES);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_yes_received")));
             checkVotes();
         } else {
-            player.sendMessage(MSG_VOTE_NO);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', getCfg("vote_no_received")));
         }
     }
 
@@ -87,7 +103,7 @@ public class VotingManager {
 
     private void stopRain() {
         Bukkit.getServer().getWorlds().get(0).setStorm(false);
-        Bukkit.broadcastMessage(MSG_STOPPING_RAIN);
+        broadcastMultiLine(getCfg("stopping_rain"));
         stopVoting();
     }
 }
